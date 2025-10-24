@@ -1,75 +1,141 @@
-<header>
+# Cloud AI SaaS Coursework Reference Implementation
 
-<!--
-  <<< Author notes: Course header >>>
-  Include a 1280×640 image, course title in sentence case, and a concise description in emphasis.
-  In your repository settings: enable template repository, add your 1280×640 social image, auto delete head branches.
-  Add your open source license, GitHub uses MIT license.
--->
+This repository tracks the implementation of the 5CCSACCA Cloud Computing for Artificial Intelligence coursework. The goal is to deliver a Software-as-a-Service platform that exposes two AI workloads through FastAPI:
 
-# Introduction to GitHub
+1. **Vision Service** &mdash; powered by Ultralytics YOLO (e.g. `yolo11n`) to analyse uploaded images.
+2. **Language Service** &mdash; powered by Microsoft's BitNet large language model to generate text from natural language prompts.
 
-_Get started using GitHub in less than an hour._
+Both services must operate within a 4 CPU / 16&nbsp;GB RAM budget and will ultimately be orchestrated with Docker and Docker Compose.
 
-</header>
+## Repository Layout
 
-<!--
-  <<< Author notes: Step 1 >>>
-  Choose 3-5 steps for your course.
-  The first step is always the hardest, so pick something easy!
-  Link to docs.github.com for further explanations.
-  Encourage users to open new tabs for steps!
--->
+```
+.
+├── docs/                  # Auxiliary documentation (roadmaps, cost notes, etc.)
+├── src/                   # FastAPI application and service wrappers
+│   ├── main.py            # FastAPI entrypoint
+│   ├── models/            # Pydantic schemas shared across the API
+│   └── services/          # Service abstractions for YOLO and BitNet
+├── tests/                 # Pytest-based test suite
+├── requirements.txt       # Python dependencies
+└── README.md              # Project documentation (this file)
+```
 
-## Step 1: Create a branch
+Additional assets (e.g. diagrams or screenshots) can be added to `docs/` as the project evolves through each coursework stage.
 
-_Welcome to "Introduction to GitHub"! :wave:_
+## Getting Started
 
-**What is GitHub?**: GitHub is a collaboration platform that uses _[Git](https://docs.github.com/get-started/quickstart/github-glossary#git)_ for versioning. GitHub is a popular place to share and contribute to [open-source](https://docs.github.com/get-started/quickstart/github-glossary#open-source) software.
-<br>:tv: [Video: What is GitHub?](https://www.youtube.com/watch?v=pBy1zgt0XPc)
+> 🆕 **First time with these tools?**
+>
+> Work through the step-by-step [Beginner Checklist](docs/beginner-guide.md) before returning to the sections below. It walks through installing Git/Python/Docker, cloning the repo, creating feature branches, and launching the FastAPI server for the very first time.
 
-**What is a repository?**: A _[repository](https://docs.github.com/get-started/quickstart/github-glossary#repository)_ is a project containing files and folders. A repository tracks versions of files and folders. For more information, see "[About repositories](https://docs.github.com/en/repositories/creating-and-managing-repositories/about-repositories)" from GitHub Docs.
+### 1. Create and activate a virtual environment
 
-**What is a branch?**: A _[branch](https://docs.github.com/en/get-started/quickstart/github-glossary#branch)_ is a parallel version of your repository. By default, your repository has one branch named `main` and it is considered to be the definitive branch. Creating additional branches allows you to copy the `main` branch of your repository and safely make any changes without disrupting the main project. Many people use branches to work on specific features without affecting any other parts of the project.
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
 
-Branches allow you to separate your work from the `main` branch. In other words, everyone's work is safe while you contribute. For more information, see "[About branches](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-branches)".
+### 2. Install dependencies
 
-**What is a profile README?**: A _[profile README](https://docs.github.com/account-and-profile/setting-up-and-managing-your-github-profile/customizing-your-profile/managing-your-profile-readme)_ is essentially an "About me" section on your GitHub profile where you can share information about yourself with the community on GitHub.com. GitHub shows your profile README at the top of your profile page. For more information, see "[Managing your profile README](https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-github-profile/customizing-your-profile/managing-your-profile-readme)".
+```bash
+pip install --upgrade pip
+pip install -r requirements.txt
+```
 
-![profile-readme-example](/images/profile-readme-example.png)
+> **Note**
+> The BitNet model is not distributed through PyPI. When you are ready to integrate the official weights, follow the instructions in the [BitNet repository](https://github.com/microsoft/BitNet) to install the package from source. The current codebase provides a deterministic mock fallback so you can exercise the API before integrating the full model.
 
-### :keyboard: Activity: Your first branch
+### 3. Run the FastAPI application
 
-1. Open a new browser tab and navigate to your newly made repository. Then, work on the steps in your second tab while you read the instructions in this tab.
-2. Navigate to the **< > Code** tab in the header menu of your repository.
+```bash
+uvicorn src.main:app --reload
+```
 
-   ![code-tab](/images/code-tab.png)
+Open <http://127.0.0.1:8000/docs> to explore the automatically generated API documentation and run sample requests.
 
-3. Click on the **main** branch drop-down.
+### 4. Execute the automated tests
 
-   ![main-branch-dropdown](/images/main-branch-dropdown.png)
+```bash
+pytest
+```
 
-4. In the field, name your branch `my-first-branch`. In this case, the name must be `my-first-branch` to trigger the course workflow.
-5. Click **Create branch: my-first-branch** to create your branch.
+The tests validate that the mock BitNet integration, YOLO service fallback, and FastAPI routes are correctly wired. As you replace the mocks with real models, expand the tests to cover your new behaviours.
 
-   ![create-branch-button](/images/create-branch-button.png)
+## Available API Endpoints
 
-   The branch will automatically switch to the one you have just created.
-   The **main** branch drop-down bar will reflect your new branch and display the new branch name.
+| Method | Path | Description |
+| ------ | ---- | ----------- |
+| `GET` | `/` | Friendly welcome message and quick docs link. |
+| `GET` | `/health` | Reports which backends are active for the vision and language services. |
+| `POST` | `/vision/predict` | Accepts an image upload (`multipart/form-data`) and returns YOLO detections. |
+| `POST` | `/llm/generate` | Accepts a JSON body with a `prompt` field and returns BitNet-generated text. |
 
-6. Wait about 20 seconds then refresh this page (the one you're following instructions from). [GitHub Actions](https://docs.github.com/en/actions) will automatically update to the next step.
+Consult the interactive documentation at `/docs` for sample request/response payloads, parameter validation rules, and schema definitions.
 
-<footer>
+## Development Workflow
 
-<!--
-  <<< Author notes: Footer >>>
-  Add a link to get support, GitHub status page, code of conduct, license link.
--->
+The coursework must follow **GitFlow**. Recommended branch naming conventions:
 
----
+- `feature/stage-01-vision-prototype`
+- `feature/stage-02-containerisation`
+- `feature/stage-03-fastapi`
+- ...and so on through `stage-11`.
 
-Get help: [Post in our discussion board](https://github.com/orgs/skills/discussions/categories/introduction-to-github) &bull; [Review the GitHub status page](https://www.githubstatus.com/)
+Each stage should land through a pull request targeting `develop`, after which the stabilised milestones are merged into `main`.
 
-&copy; 2024 GitHub &bull; [Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/code_of_conduct.md) &bull; [MIT License](https://gh.io/mit)
+### Suggested Stage Roadmap
 
-</footer>
+| Stage | Focus | Repository Touchpoints |
+| ----- | ----- | ---------------------- |
+| 1 | Baseline inference | `src/services/vision.py`, tests validating YOLO predictions |
+| 2 | Containerisation | `Dockerfile`, `docker-compose.yml`, update README deployment steps |
+| 3 | API exposure | `src/main.py`, FastAPI routers, authentication stubs |
+| 4 | Persistence | Database module, migrations, schema documentation |
+| 5 | Firebase storage | Firebase client wrapper, new endpoints, security updates |
+| 6 | Asynchronous processing | RabbitMQ service, Docker Compose orchestration |
+| 7 | Authentication | Firebase auth integration, role-based access |
+| 8 | Cost estimation | `docs/costs.md`, README summary, video discussion notes |
+| 9 | Monitoring | Observability stack (e.g. Prometheus + Grafana) |
+| 10 | Testing strategy | Comprehensive Pytest suite, coverage reports |
+| 11 | Security hardening | Threat modelling, environment hardening, secrets management |
+
+Use GitHub Issues or Projects to track the subtasks discovered in each stage. Update the README and documentation after every completed milestone.
+
+## Deployment Targets
+
+Docker assets will be added in Stage 2. The final submission must support:
+
+1. **Build:** `docker compose build`
+2. **Run:** `docker compose up`
+3. **Test:** `docker compose run --rm api pytest`
+
+If the architecture grows beyond these commands, include helper scripts in a `scripts/` folder and document them here.
+
+## Video Preparation Checklist
+
+The final five-minute video (plus one-minute demo) must address:
+
+1. System overview and design decisions
+2. Architecture and technology stack (including Docker Compose topologies)
+3. Model configuration and training considerations
+4. Development workflow and Git logs
+5. CI/CD automation strategy
+6. Cost estimation for up to 200,000 concurrent users
+7. Testing, security, and monitoring measures
+8. Identified limitations
+9. Sustainability considerations
+10. References in IEEE format
+
+Capture short clips or screenshots during development to streamline video production later.
+
+## Next Steps
+
+- Flesh out the YOLO inference logic with real model weights and sample images.
+- Replace the BitNet mock response with the actual Microsoft implementation.
+- Add Docker and Docker Compose definitions.
+- Introduce persistence, messaging, authentication, and monitoring in line with the coursework stages.
+- Expand the automated test coverage as each new component arrives.
+
+Feel free to open GitHub Issues to document assumptions, open questions, or work items as you progress.
+
